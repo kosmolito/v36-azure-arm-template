@@ -95,8 +95,9 @@ Configuration tenta4 {
 $ConfigData = @{
     AllNodes = @(
         @{
-            NodeName                    = "localhost";
-            PSDscAllowPlainTextPassword = $true;
+            NodeName                    = "localhost"
+            PSDscAllowPlainTextPassword = $true
+            PSDscAllowDomainUser        = $true
         }
     )
 }
