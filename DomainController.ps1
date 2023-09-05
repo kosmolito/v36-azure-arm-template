@@ -1,68 +1,27 @@
-# The script is used to create a new domain controller in Azure
-# Credentials are stored in Azure Automation Assets
-# The script is used in Azure Automation DSC, it will be triggered by ARM template
+param (
+    [Parameter(Mandatory=$true)][string]$domainName,
+    [Parameter(Mandatory=$true)][string]$adminUsername,
+    [Parameter(Mandatory=$true)][string]$AdminPassword
+)
 
-configuration DomainController {
-    param (
-        [Parameter(Mandatory)]
-        $DomainName,
-        [Parameter(Mandatory)]
-        $DomainAdminCredential
-    )
+# Install Active Directory Domain Services
+Install-WindowsFeature AD-Domain-Services -IncludeManagementTools
 
-    Import-DscResource -ModuleName xActiveDirectory
-    Import-DscResource -ModuleName PSDesiredStateConfiguration
+# Create a new domain in a new forest
 
-    $DomainAdministratorCredential  = (Get-AutomationPSCredential -Name $DomainAdminCredential)
 
-    node localhost
-    {
-        # Install Active Directory Domain Services
-        WindowsFeature ADInstall {
-            Ensure                  = "Present"
-            Name                    = "AD-Domain-Services"
-            IncludeAllSubFeature    = $true
-        }
-        # Install Active Directory Domain Services Tools
-        WindowsFeature ADDSTools
-        {
-            Ensure      = "Present"
-            Name        = "RSAT-ADDS"
-            DependsOn   = "[WindowsFeature]ADInstall"
-
-        }
-        # Install Active Directory PowerShell Module
-        WindowsFeature "RSATADPowerShell"
-        {
-            Ensure      = "Present"
-            Name        = "RSAT-AD-PowerShell"
-            DependsOn   = "[WindowsFeature]ADDSTools"
-        }
-        # Install Active Directory Tools
-        WindowsFeature ActiveDirectoryTools {
-            Ensure      = "Present"
-            Name        = 'RSAT-AD-Tools'
-            DependsOn   = "[WindowsFeature]ADDSTools"
-        }
-        # Install DNS Server Tools
-        WindowsFeature DNSServerTools {
-            Ensure      = "Present"
-            Name        = 'RSAT-DNS-Server'
-            DependsOn   = "[WindowsFeature]ActiveDirectoryTools"
-        }
-        # Install DNS Server
-        WindowsFeature DNS
-        {
-            Ensure      = "Present"
-            Name        = "DNS"
-            DependsOn   = "[WindowsFeature]DNSServerTools"
-        }
-        # Promote server to Domain Controller
-        xADDomain Domain {
-            DomainName                      = $DomainName
-            DomainAdministratorCredential   = $DomainAdministratorCredential
-            SafemodeAdministratorPassword   = $DomainAdministratorCredential
-            DependsOn                       = "[WindowsFeature]ActiveDirectoryTools"
-        }
+$Params = @{
+    DomainName = $domainName
+    DomainNetbiosName = $domainName.Split('.')[0]
+    SafeModeAdministratorPassword = (ConvertTo-SecureString -AsPlainText $AdminPassword -Force)
+    CreateDnsDelegation = $false
+    DatabasePath = 'C:\Windows\NTDS'
+    DomainMode = 'WinThreshold'
+    ForestMode = 'WinThreshold'
+    InstallDns = $true
+    LogPath = 'C:\Windows\NTDS'
+    NoRebootOnCompletion = $true
+    SysvolPath = 'C:\Windows\SYSVOL'
+    Force = $true
     }
-}
+Install-ADDSForest @Params
