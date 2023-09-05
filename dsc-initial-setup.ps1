@@ -1,12 +1,3 @@
-param (
-    [Parameter(Mandatory = $true)]
-    [string]$DomainName,
-    [Parameter(Mandatory = $true)]
-    [string]$AdminUsername,
-    [Parameter(Mandatory = $true)]
-    [string]$AdminPassword
-)
-
 [string]$ScriptUri = "https://raw.githubusercontent.com/kosmolito/v36-azure-arm-template/main/dsc-config.ps1"
 $ScriptName = Split-Path $ScriptUri -Leaf
 $ScriptPath = "C:\$($ScriptName)"
@@ -28,12 +19,4 @@ $Modules.GetEnumerator() | ForEach-Object {
     $ModuleName = $_.Key
     $ModuleVersion = $_.Value
     Install-Module -Name $ModuleName -RequiredVersion $ModuleVersion -Force -Scope AllUsers
-}
-
-if (!(Test-Path $ScriptPath)) {
-    Write-Error "Script not found at $ScriptPath"
-    Exit 1
-} else {
-    Write-Output "Running $ScriptPath"
-    powershell.exe -ExecutionPolicy Bypass -File $ScriptPath -DomainName $DomainName -AdminUsername $AdminUsername -AdminPassword $AdminPassword
 }
