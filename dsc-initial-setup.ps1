@@ -7,7 +7,9 @@ if (!(Test-Path $DSCConfigFolder)) {
 }
 
 Invoke-WebRequest -Uri $ScriptUri -OutFile $ScriptPath -UseBasicParsing
+Start-Sleep -Seconds 5
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+Start-Sleep -Seconds 5
 
 $Modules = @{
     "xActiveDirectory" = "3.0.0.0"
@@ -19,4 +21,21 @@ $Modules.GetEnumerator() | ForEach-Object {
     $ModuleName = $_.Key
     $ModuleVersion = $_.Value
     Install-Module -Name $ModuleName -RequiredVersion $ModuleVersion -Force -Scope AllUsers
+    start-sleep -Seconds 5
 }
+
+[DscLocalConfigurationManager()]
+Configuration LocalConfigManager {
+    Node "localhost" {
+        Settings {
+            AllowModuleOverwrite = $true
+            ConfigurationMode = "ApplyAndAutoCorrect"
+            RebootNodeIfNeeded = $true
+        }
+    }
+}
+
+$LocalManagerPath = "$($DSCConfigFolder)\LCM"
+LocalConfigManager -OutputPath $LocalManagerPath -Verbose
+start-sleep -Seconds 5
+Set-DscLocalConfigurationManager -Path $LocalManagerPath -Force -Verbose
