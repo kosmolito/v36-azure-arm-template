@@ -24,6 +24,9 @@ $Modules.GetEnumerator() | ForEach-Object {
     start-sleep -Seconds 5
 }
 
+winrm quickconfig -q
+Start-Sleep -Seconds 5
+
 [DscLocalConfigurationManager()]
 Configuration LocalConfigManager {
     Node "localhost" {
